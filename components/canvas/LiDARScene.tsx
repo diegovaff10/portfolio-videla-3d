@@ -58,13 +58,8 @@ export default function LiDARScene() {
         <GalaxyCloud />
         <CameraRig />
 
-        {/* Post-Procesamiento para Brillo (Luces Reales) */}
-        <EffectComposer disableNormalPass>
-          <Bloom 
-            luminanceThreshold={0.5} // Qué tan brillante debe ser algo para brillar
-            mipmapBlur 
-            intensity={1.5} 
-          />
+        <EffectComposer disableNormalPass multisampling={4}>
+          <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.9} intensity={1.5} />
         </EffectComposer>
       </Canvas>
     </div>

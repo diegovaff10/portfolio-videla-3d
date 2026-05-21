@@ -3,6 +3,7 @@
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
   --color-electric-blue: #0000ff;
   --color-dark-bg: #050505;
 }

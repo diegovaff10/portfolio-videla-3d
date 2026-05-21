@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter, Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -12,6 +12,12 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
 });
 
+const spaceMono = Space_Mono({
+  weight: ['400', '700'],
+  variable: "--font-space-mono",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "Diego Videla | Portfolio",
   description: "Cinematic 3D Portfolio of Diego Videla",
@@ -19,6 +25,7 @@ export const metadata: Metadata = {
 
 import LiDARScene from "@/components/canvas/LiDARScene";
 import { Navigation } from "@/components/ui/Navigation";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 export default function RootLayout({
   children,
@@ -28,10 +35,13 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased bg-black`}
+      className={`${inter.variable} ${spaceGrotesk.variable} ${spaceMono.variable} h-full antialiased bg-black`}
     >
       <body className="min-h-full flex flex-col font-sans bg-black selection:bg-white selection:text-black overflow-hidden">
         
+        {/* Pantalla de Carga Global */}
+        <LoadingScreen />
+
         {/* Fondo Global (Persistente entre rutas) */}
         <div className="fixed inset-0 z-0">
           <LiDARScene />

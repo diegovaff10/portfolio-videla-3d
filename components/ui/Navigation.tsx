@@ -3,12 +3,21 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/store/useStore";
+import { useState, useEffect } from "react";
 
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const setCameraTarget = useStore(state => state.setCameraTarget);
   const projects = useStore(state => state.projects);
+
+  const [showOnboarding, setShowOnboarding] = useState(true);
+
+  // Ocultar el onboarding agresivo después de 6 segundos
+  useEffect(() => {
+    const timer = setTimeout(() => setShowOnboarding(false), 6000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <>
@@ -44,17 +53,26 @@ export function Navigation() {
         </nav>
       </header>
 
-      {/* Proyecto / Navegación Lateral (HUD Estelar) */}
-      <div className="fixed left-6 top-1/2 -translate-y-1/2 z-50 pointer-events-auto hidden md:flex flex-col gap-2 font-mono text-[10px] uppercase tracking-widest text-white/50">
+      {/* Branding (Bottom Left) */}
+      <div className="fixed bottom-6 left-6 md:bottom-12 md:left-12 z-50 flex flex-col font-display uppercase tracking-tighter mix-blend-difference pointer-events-none text-white">
+        <span className="text-2xl md:text-4xl font-bold leading-none">Diego Videla</span>
+        <span className="text-xs md:text-sm tracking-widest text-[#00d0ff] mt-1 font-mono">Digital Experience</span>
+      </div>
+
+      {/* Navegación lateral (Menú de Proyectos) - SOLO EN HOME */}
+      {pathname === '/' && (
+        <nav className="fixed left-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-4 font-mono text-sm tracking-widest text-white/50 mix-blend-difference pointer-events-auto">
         <div className="border-b border-white/20 pb-2 mb-2 text-white/30">
-          GALAXY CLUSTERS
+          Projects
         </div>
         {projects.map((proj, idx) => (
           <button 
             key={proj.id}
             onClick={() => {
               setCameraTarget(proj.pos);
-              router.push(`/project/${proj.id}`);
+              setTimeout(() => {
+                router.push(`/project/${proj.id}`);
+              }, 2000);
             }}
             className="text-left hover:text-white hover:translate-x-2 transition-all flex items-center gap-2"
           >
@@ -62,14 +80,53 @@ export function Navigation() {
             {proj.name}
           </button>
         ))}
-      </div>
+        </nav>
+      )}
 
-      {/* Info lateral (Bottom Right) */}
-      <div className="fixed bottom-6 right-6 md:bottom-12 md:right-12 z-50 text-right font-mono text-xs text-white/40 uppercase tracking-widest flex flex-col gap-1 pointer-events-none">
-        <span>LAT: -34.6037</span>
-        <span>LNG: -58.3816</span>
-        <span>SYSTEM: ONLINE</span>
-      </div>
+      {/* Overlays WebGL - SOLO EN HOME */}
+      {pathname === '/' && (
+        <>
+          {/* Info lateral (Bottom Right) */}
+          <div className="fixed bottom-32 right-6 md:bottom-28 md:right-12 z-50 text-right font-mono text-xs text-white/40 uppercase tracking-widest flex flex-col gap-1 pointer-events-none">
+            <span>LAT: -34.6037</span>
+            <span>LNG: -58.3816</span>
+            <span>SYSTEM: ONLINE</span>
+          </div>
+
+          {/* Navigation Help Panel (Bottom Right) */}
+          <div className="fixed bottom-6 right-6 md:bottom-12 md:right-12 z-40 font-mono text-[10px] text-white/40 text-right pointer-events-none flex flex-col items-end gap-1">
+            <div className="border-b border-white/20 pb-1 mb-1 font-bold text-white/60 tracking-widest uppercase">
+              SYS.NAV_CONTROLS
+            </div>
+            <div className="flex justify-between w-40">
+              <span>[CLICK + DRAG]</span>
+              <span className="text-white/80">ORBIT</span>
+            </div>
+            <div className="flex justify-between w-40">
+              <span>[SCROLL]</span>
+              <span className="text-white/80">ZOOM</span>
+            </div>
+            <div className="flex justify-between w-40">
+              <span>[CLICK NODE]</span>
+              <span className="text-white/80">TRAVEL</span>
+            </div>
+            <div className="w-full h-[1px] bg-white/20 mt-2"></div>
+          </div>
+
+          {/* System Notification (Onboarding) */}
+          {showOnboarding && (
+            <div className="fixed top-6 right-6 md:top-12 md:right-12 z-[100] border-l-2 border-[#00d0ff] bg-[#001020]/90 backdrop-blur-md p-3 shadow-[0_0_20px_rgba(0,208,255,0.15)] flex items-start gap-3 w-64 transition-all duration-1000 ease-out animate-in fade-in slide-in-from-right-10 pointer-events-none">
+              <div className="text-[#00d0ff] animate-pulse mt-[2px] text-xs">■</div>
+              <div className="font-mono">
+                <div className="text-[10px] font-bold text-white mb-1 tracking-widest">SYS.NOTIF //</div>
+                <div className="text-[10px] text-[#00d0ff]/70 leading-tight">
+                  Haz clic y arrastra el canvas para explorar el entorno 3D.
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </>
   );
 }

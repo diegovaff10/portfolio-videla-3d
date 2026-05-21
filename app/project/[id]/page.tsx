@@ -1,9 +1,12 @@
 import { PageTransition } from "@/components/ui/PageTransition";
+import { Navigation } from "@/components/ui/Navigation";
+import Link from "next/link";
 
 export default function ProjectPage({ params }: { params: { id: string } }) {
   return (
     <PageTransition>
       <div className="w-full max-w-7xl mx-auto flex flex-col justify-center text-white min-h-[60vh]">
+        <Navigation />
         
         {/* Header del Proyecto */}
         <div className="border-b border-white/20 pb-8 mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
@@ -16,10 +19,15 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
               Project Data
             </h1>
           </div>
-          <div className="font-mono text-xs text-white/40 uppercase tracking-widest text-right">
-            [ACCESS GRANTED]<br/>
-            {new Date().toISOString()}
-          </div>
+          
+          {/* Botón de Salida (Close / Return) */}
+          <Link href="/">
+            <button className="group relative border border-white/50 bg-white/10 hover:bg-white hover:text-black transition-all px-6 py-3 flex items-center gap-2 overflow-hidden">
+              <span className="relative z-10 font-bold tracking-widest">
+                [X] CLOSE
+              </span>
+            </button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 w-full">
