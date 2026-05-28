@@ -12,6 +12,7 @@ export function Navigation() {
   const projects = useStore(state => state.projects);
 
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Ocultar el onboarding agresivo después de 6 segundos
   useEffect(() => {
@@ -28,7 +29,8 @@ export function Navigation() {
           <span className="text-white/50">CREATIVE DEVELOPER</span>
         </Link>
         
-        <nav className="pointer-events-auto flex gap-8">
+        {/* Nav Desktop */}
+        <nav className="pointer-events-auto hidden md:flex gap-8">
           <Link 
             href="/" 
             onClick={() => setCameraTarget(null)}
@@ -51,7 +53,44 @@ export function Navigation() {
             Contact
           </Link>
         </nav>
+        {/* Botón Menu Mobile */}
+        <button 
+          className="md:hidden pointer-events-auto bg-[#00d0ff] text-black font-bold font-mono px-4 py-2 shadow-[0_0_15px_rgba(0,208,255,0.3)] z-[120]"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? "[X] CLOSE" : "MENU"}
+        </button>
       </header>
+
+      {/* Modal Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[110] bg-[#020510]/95 backdrop-blur-xl flex flex-col items-center justify-center font-mono text-[#00d0ff] pointer-events-auto p-8">
+          <div className="flex flex-col gap-8 text-2xl text-center mb-12 border-b border-[#00d0ff]/30 pb-8 w-full max-w-sm">
+            <Link href="/" onClick={() => { setCameraTarget(null); setMobileMenuOpen(false); }}>Index</Link>
+            <Link href="/info" onClick={() => { setCameraTarget(null); setMobileMenuOpen(false); }}>Info</Link>
+            <Link href="/contact" onClick={() => { setCameraTarget(null); setMobileMenuOpen(false); }}>Contact</Link>
+          </div>
+          
+          <div className="flex flex-col gap-4 text-center w-full max-w-sm">
+            <div className="text-xs text-white/50 mb-2">PORTFOLIO // DB</div>
+            {projects.map((proj, idx) => (
+              <button 
+                key={proj.id}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setCameraTarget(proj.pos);
+                  setTimeout(() => {
+                    router.push(`/project/${proj.id}`);
+                  }, 2000);
+                }}
+                className="text-white hover:text-[#00d0ff] text-lg border border-white/10 py-3 bg-white/5 active:bg-[#00d0ff] active:text-black transition-all"
+              >
+                [{String(idx + 1).padStart(2, '0')}] {proj.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Branding (Bottom Left) */}
       <div className="fixed bottom-6 left-6 md:bottom-12 md:left-12 z-50 flex flex-col font-display uppercase tracking-tighter mix-blend-difference pointer-events-none text-white">
@@ -59,9 +98,9 @@ export function Navigation() {
         <span className="text-xs md:text-sm tracking-widest text-[#00d0ff] mt-1 font-mono">Digital Experience</span>
       </div>
 
-      {/* Navegación lateral (Menú de Proyectos) - SOLO EN HOME */}
+      {/* Navegación lateral (Menú de Proyectos) - SOLO EN HOME Y DESKTOP */}
       {pathname === '/' && (
-        <nav className="fixed left-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-4 font-mono text-sm tracking-widest text-white/50 mix-blend-difference pointer-events-auto">
+        <nav className="fixed left-6 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col gap-4 font-mono text-sm tracking-widest text-white/50 mix-blend-difference pointer-events-auto">
         <div className="border-b border-white/20 pb-2 mb-2 text-white/30">
           Projects
         </div>
@@ -87,14 +126,14 @@ export function Navigation() {
       {pathname === '/' && (
         <>
           {/* Info lateral (Bottom Right) */}
-          <div className="fixed bottom-32 right-6 md:bottom-28 md:right-12 z-50 text-right font-mono text-xs text-white/40 uppercase tracking-widest flex flex-col gap-1 pointer-events-none">
+          <div className="fixed bottom-32 right-6 md:bottom-28 md:right-12 z-50 text-right font-mono text-xs text-white/40 uppercase tracking-widest flex flex-col gap-1 pointer-events-none hidden md:flex">
             <span>LAT: -34.6037</span>
             <span>LNG: -58.3816</span>
             <span>SYSTEM: ONLINE</span>
           </div>
 
           {/* Navigation Help Panel (Bottom Right) */}
-          <div className="fixed bottom-6 right-6 md:bottom-12 md:right-12 z-40 font-mono text-[10px] text-white/40 text-right pointer-events-none flex flex-col items-end gap-1">
+          <div className="fixed bottom-6 right-6 md:bottom-12 md:right-12 z-40 font-mono text-[10px] text-white/40 text-right pointer-events-none flex flex-col items-end gap-1 hidden md:flex">
             <div className="border-b border-white/20 pb-1 mb-1 font-bold text-white/60 tracking-widest uppercase">
               SYS.NAV_CONTROLS
             </div>

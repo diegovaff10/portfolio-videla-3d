@@ -58,8 +58,14 @@ export default function LiDARScene() {
         <GalaxyCloud />
         <CameraRig />
 
-        <EffectComposer disableNormalPass multisampling={4}>
-          <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.9} intensity={1.5} />
+        {/* Post-procesamiento Brutalista (Glow/Bloom) */}
+        {/* Se ha quitado multisampling={4} y mipmapBlur porque causan crashes en iOS/Android Safari */}
+        <EffectComposer disableNormalPass>
+          <Bloom 
+            luminanceThreshold={0.1} 
+            luminanceSmoothing={0.9} 
+            intensity={2.5} 
+          />
         </EffectComposer>
       </Canvas>
     </div>

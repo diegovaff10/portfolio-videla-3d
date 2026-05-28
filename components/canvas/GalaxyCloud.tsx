@@ -10,24 +10,19 @@ export function GalaxyCloud() {
   const asteroidesRef = useRef<THREE.InstancedMesh>(null);
   const solesRef = useRef<THREE.InstancedMesh>(null);
   
-  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
+  const hoveredNode = useStore(state => state.hoveredNode);
+  const setHoveredNode = useStore(state => state.setHoveredNode);
   const router = useRouter();
   const setCameraTarget = useStore(state => state.setCameraTarget);
   const setProjects = useStore(state => state.setProjects);
 
-  const { positions, colors, dataNodes, asteroidMatrices, sunsMatrices } = useMemo(() => {
-    // Generador pseudoaleatorio determinista
+  const { positions, colors, hudNodesDef, astMatrices, sunMatrices } = useMemo(() => {
     let seed = 12345;
     const seededRandom = () => {
       const x = Math.sin(seed++) * 10000;
       return x - Math.floor(x);
     };
 
-    const pts: number[] = [];
-    const cols: number[] = [];
-    const hudNodes: { pos: THREE.Vector3, offsetPos: THREE.Vector3, id: string, name: string, metadata: string }[] = [];
-
-    // Constelación fija de 5 proyectos (Mapa Estelar)
     const clusterCenters = [
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(-18, 10, -8),
@@ -44,119 +39,102 @@ export function GalaxyCloud() {
       "05. DEEP SPACE HUB"
     ];
 
-    clusterCenters.forEach((center, idx) => {
-      // 20000 partículas por galaxia
-      for (let i = 0; i < 20000; i++) {
-        // Distribución elíptica (galaxia)
+    const pts: number[] = [];
+    const cols: number[] = [];
+    const PARTICLE_COUNT = 45000;
+    const hNodes: any[] = [];
+    
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
         const radius = seededRandom() * 15;
         const theta = seededRandom() * Math.PI * 2;
         const phi = Math.acos(2 * seededRandom() - 1);
         
-        // Aplanar en el eje Y para que parezcan discos galácticos
-        const x = center.x + radius * Math.sin(phi) * Math.cos(theta);
-        const y = center.y + (radius * Math.sin(phi) * Math.sin(theta)) * 0.1; // * 0.1 lo aplasta
-        const z = center.z + radius * Math.cos(phi);
+        const cluster = clusterCenters[Math.floor(seededRandom() * clusterCenters.length)];
+        
+        const x = cluster.x + radius * Math.sin(phi) * Math.cos(theta);
+        const y = cluster.y + (radius * Math.sin(phi) * Math.sin(theta)) * 0.1; 
+        const z = cluster.z + radius * Math.cos(phi);
 
         pts.push(x, y, z);
         
-        // Color basado en distancia al centro (Núcleo brillante, halos azules eléctricos)
-        const dist = new THREE.Vector3(x, y, z).distanceTo(center);
+        const dist = new THREE.Vector3(x, y, z).distanceTo(cluster);
         if (dist < 3) {
-          cols.push(1, 1, 1); // Núcleo Blanco
+          cols.push(1, 1, 1);
         } else if (dist < 8) {
-          cols.push(0.0, 0.8, 1.0); // Halo Cian Neón
+          cols.push(0.0, 0.8, 1.0);
         } else {
-          cols.push(0.0, 0.2, 0.6); // Polvo Azul Profundo
+          cols.push(0.0, 0.2, 0.6);
         }
-      }
+    }
 
-      // El offset para el Tether 3D (Hacia arriba a la izquierda para mantener consistencia)
+    clusterCenters.forEach((center, idx) => {
       const offsetPos = center.clone().add(new THREE.Vector3(-4, 4, 0));
-
-      hudNodes.push({
+      hNodes.push({
         pos: center,
         offsetPos: offsetPos,
-        id: `prj-${idx + 1}`,
-        name: projectNames[idx],
-        metadata: "SYS_ARCH_V2"
+        id: `SYS-${1000 + idx}`,
+        name: projectNames[idx] || "UNKNOWN SECTOR",
+        metadata: "CLASSIFIED DATA"
       });
     });
 
-    // Polvo intergaláctico de fondo (Puntos sueltos en el vacío)
-    for(let i=0; i<30000; i++) {
-      const p = new THREE.Vector3(
-        (seededRandom() - 0.5) * 80,
-        (seededRandom() - 0.5) * 80,
-        (seededRandom() - 0.5) * 80
-      );
-      pts.push(p.x, p.y, p.z);
-      cols.push(0.05, 0.05, 0.15); // Azul medianoche para el fondo
-    }
-
-    // --- BIO-TECH BODIES (Asteroides y Soles) ---
-    const asteroidMatrices: THREE.Matrix4[] = [];
-    const sunsMatrices: THREE.Matrix4[] = [];
-    const dummy = new THREE.Object3D();
-
-    for (const center of clusterCenters) {
-      // 5 Soles por galaxia
+    const aMatrices: THREE.Matrix4[] = [];
+    const sMatrices: THREE.Matrix4[] = [];
+    
+    clusterCenters.forEach((center) => {
       for (let i = 0; i < 5; i++) {
-        dummy.position.copy(center).add(new THREE.Vector3(
-          (seededRandom() - 0.5) * 6,
-          (seededRandom() - 0.5) * 2,
-          (seededRandom() - 0.5) * 6
-        ));
-        const scale = 0.5 + seededRandom() * 0.8;
-        dummy.scale.set(scale, scale, scale);
-        dummy.rotation.set(seededRandom() * Math.PI, seededRandom() * Math.PI, 0);
-        dummy.updateMatrix();
-        sunsMatrices.push(dummy.matrix.clone());
+        const matrix = new THREE.Matrix4();
+        const pos = new THREE.Vector3(
+          center.x + (seededRandom() - 0.5) * 15,
+          center.y + (seededRandom() - 0.5) * 5,
+          center.z + (seededRandom() - 0.5) * 15
+        );
+        matrix.setPosition(pos);
+        
+        const scale = seededRandom() * 0.5 + 0.2;
+        matrix.scale(new THREE.Vector3(scale, scale, scale));
+        aMatrices.push(matrix);
       }
+      
+      const matrix = new THREE.Matrix4();
+      matrix.setPosition(center);
+      matrix.scale(new THREE.Vector3(2, 2, 2));
+      sMatrices.push(matrix);
+    });
 
-      // 40 Asteroides por galaxia
-      for (let i = 0; i < 40; i++) {
-        dummy.position.copy(center).add(new THREE.Vector3(
-          (seededRandom() - 0.5) * 12,
-          (seededRandom() - 0.5) * 4,
-          (seededRandom() - 0.5) * 12
-        ));
-        const scale = 0.2 + seededRandom() * 0.6;
-        dummy.scale.set(scale, scale * (0.5 + seededRandom()*0.5), scale);
-        dummy.rotation.set(seededRandom() * Math.PI, seededRandom() * Math.PI, seededRandom() * Math.PI);
-        dummy.updateMatrix();
-        asteroidMatrices.push(dummy.matrix.clone());
-      }
-    }
-
-    return { 
-      positions: new Float32Array(pts), 
+    return {
+      positions: new Float32Array(pts),
       colors: new Float32Array(cols),
-      dataNodes: hudNodes,
-      asteroidMatrices,
-      sunsMatrices
+      hudNodesDef: hNodes,
+      astMatrices: aMatrices,
+      sunMatrices: sMatrices
     };
   }, []);
 
-  // Enviar proyectos al store global
-  useEffect(() => {
-    setProjects(dataNodes);
-  }, [dataNodes, setProjects]);
-
-  // Inicializar Matrices de InstancedMesh
   useEffect(() => {
     if (asteroidesRef.current) {
-      asteroidMatrices.forEach((mat, i) => {
-        asteroidesRef.current!.setMatrixAt(i, mat);
+      astMatrices.forEach((matrix, i) => {
+        asteroidesRef.current!.setMatrixAt(i, matrix);
       });
       asteroidesRef.current.instanceMatrix.needsUpdate = true;
     }
     if (solesRef.current) {
-      sunsMatrices.forEach((mat, i) => {
-        solesRef.current!.setMatrixAt(i, mat);
+      sunMatrices.forEach((matrix, i) => {
+        solesRef.current!.setMatrixAt(i, matrix);
       });
       solesRef.current.instanceMatrix.needsUpdate = true;
     }
-  }, [asteroidMatrices, sunsMatrices]);
+  }, [astMatrices, sunMatrices]);
+
+  useEffect(() => {
+    setProjects(
+      hudNodesDef.map((node, i) => ({
+        id: `project-${i+1}`,
+        name: node.name,
+        pos: node.pos
+      }))
+    );
+  }, [hudNodesDef, setProjects]);
 
   useFrame((state) => {
     if (groupRef.current) {
@@ -175,7 +153,6 @@ export function GalaxyCloud() {
           <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
           <bufferAttribute attach="attributes-color" count={colors.length / 3} array={colors} itemSize={3} />
         </bufferGeometry>
-        {/* Tamaño de partícula más pequeño para mayor definición */}
         <pointsMaterial 
           size={0.015} 
           vertexColors 
@@ -187,27 +164,21 @@ export function GalaxyCloud() {
         />
       </points>
 
-      {/* Asteroides Bio-Tech (Sólidos oscuros) */}
-      <instancedMesh ref={asteroidesRef} args={[undefined, undefined, asteroidMatrices.length]}>
+      <instancedMesh ref={asteroidesRef} args={[undefined, undefined, astMatrices.length]}>
         <dodecahedronGeometry args={[1, 0]} />
         <meshStandardMaterial color="#010403" roughness={0.9} metalness={0.1} flatShading />
       </instancedMesh>
 
-      {/* Soles Wireframe Luminosos (Cian Neón) */}
-      <instancedMesh ref={solesRef} args={[undefined, undefined, sunsMatrices.length]}>
+      <instancedMesh ref={solesRef} args={[undefined, undefined, sunMatrices.length]}>
         <icosahedronGeometry args={[1, 1]} />
         <meshBasicMaterial color="#00d0ff" wireframe transparent opacity={0.3} />
       </instancedMesh>
 
-      {/* LiDAR HUD Overlays y Luces Centrales */}
-      {dataNodes.map((node, i) => {
+      {hudNodesDef.map((node, i) => {
         const isHovered = hoveredNode === i;
         return (
           <group key={i}>
-            {/* Luz intensa en el centro de cada galaxia */}
             <pointLight position={node.pos} intensity={isHovered ? 5 : 2} distance={15} color="#ffffff" />
-            
-            {/* Tether 3D Dinámico */}
             <Line 
               points={[node.pos, node.offsetPos]} 
               color="#00d0ff" 
@@ -221,29 +192,23 @@ export function GalaxyCloud() {
               <meshBasicMaterial color={isHovered ? "#ffffff" : "#0033ff"} wireframe />
             </mesh>
             
-            {/* Panel de Información en el Offset */}
             <Html position={node.offsetPos} center zIndexRange={[100, 0]}>
               <div 
                 className="relative flex items-start justify-start group cursor-pointer origin-top-left"
                 onMouseEnter={() => { setHoveredNode(i); document.body.style.cursor = 'crosshair'; }}
                 onMouseLeave={() => { setHoveredNode(null); document.body.style.cursor = 'auto'; }}
-                onClick={() => {
-                  setCameraTarget(node.pos);
-                  setTimeout(() => {
-                    router.push(`/project/${node.id}`);
-                  }, 2000);
+                onClick={(e) => {
+                  if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
+                    e.stopPropagation();
+                    setHoveredNode(hoveredNode === i ? null : i);
+                  }
                 }}
               >
-                
-                {/* Mini Label (Siempre Visible) */}
                 <div className={`transition-all duration-300 bg-black/80 border text-[#00d0ff] px-2 py-1 font-mono text-[10px] whitespace-nowrap shadow-[0_0_15px_rgba(0,208,255,0.3)] ${isHovered ? 'opacity-0 scale-90 border-[#00d0ff]' : 'opacity-100 scale-100 border-[#0033ff]'}`}>
                   {node.id} // {node.name}
                 </div>
 
-                {/* Panel Técnico Brutalista (Absoluto y Escalable para evitar bugs de Layout) */}
-                <div className={`absolute top-0 left-0 w-64 md:w-80 border border-[#00d0ff]/50 bg-[#050a1f]/90 backdrop-blur-md p-4 shadow-[0_0_30px_rgba(0,208,255,0.2)] transition-all duration-500 origin-top-left ${isHovered ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
-                  
-                  {/* Header Técnico */}
+                <div className={`absolute top-0 left-0 w-[75vw] sm:w-64 md:w-80 border border-[#00d0ff]/50 bg-[#050a1f]/90 backdrop-blur-md p-4 shadow-[0_0_30px_rgba(0,208,255,0.2)] transition-all duration-500 origin-top-left ${isHovered ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
                   <div className="flex justify-between items-start border-b border-[#00d0ff]/30 pb-2 mb-2 text-[#00d0ff]">
                     <div className="flex flex-col">
                       <span className="font-bold text-lg tracking-tighter">N L I A S C</span>
@@ -256,7 +221,6 @@ export function GalaxyCloud() {
                     </div>
                   </div>
 
-                  {/* Título del Proyecto */}
                   <div className="font-bold text-2xl tracking-tighter uppercase leading-none mb-2 mt-4 text-white">
                     {node.name}
                   </div>
@@ -266,7 +230,6 @@ export function GalaxyCloud() {
                     <span>REF: {node.id}</span>
                   </div>
                   
-                  {/* Imagen del Proyecto con UI Blueprint */}
                   <div className="w-full h-32 bg-[#020510] border border-[#00d0ff]/30 relative overflow-hidden flex flex-col justify-between p-2">
                     <div className="flex justify-between text-[8px] text-[#00d0ff]/50">
                       <span>UX/UI (00) SYNCED</span>
@@ -285,7 +248,6 @@ export function GalaxyCloud() {
                     </div>
                   </div>
 
-                  {/* Footer Barcode */}
                   <div className="flex justify-between items-end mt-4 pt-2 border-t border-[#00d0ff]/30">
                     <div className="text-[10px] font-bold text-[#00d0ff]/50">
                       PORTFOLIO // DB
@@ -296,6 +258,20 @@ export function GalaxyCloud() {
                       ))}
                     </div>
                   </div>
+
+                  <button 
+                    className="w-full mt-4 bg-[#00d0ff] hover:bg-white text-black font-bold py-2 tracking-widest text-xs transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHoveredNode(null); 
+                      setCameraTarget(node.pos);
+                      setTimeout(() => {
+                        router.push(`/project/${node.id}`);
+                      }, 2000);
+                    }}
+                  >
+                    [ ENTER SYSTEM ]
+                  </button>
 
                 </div>
               </div>

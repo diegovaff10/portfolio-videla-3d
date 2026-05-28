@@ -23,10 +23,10 @@ export function LoadingScreen() {
       };
 
       setDataStream(prev => {
-        const newStream = [generateLine(), generateLine(), generateLine(), ...prev];
-        return newStream.slice(0, 30); // Mantener 30 líneas máximo en pantalla
+        const newStream = [generateLine(), generateLine(), ...prev];
+        return newStream.slice(0, 15); // Mantener 15 líneas máximo en pantalla para evitar ahogar la RAM móvil
       });
-    }, 50);
+    }, 120); // Intervalo más lento para no saturar el hilo principal de React en celulares
 
     return () => clearInterval(interval);
   }, [isReady]);
